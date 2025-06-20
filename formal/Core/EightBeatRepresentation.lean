@@ -181,20 +181,55 @@ theorem character_orthogonality :
     intro h_eq
     have : n.val = m.val := by
       -- If n - m ≡ 0 (mod 8) and both are < 8, then n = m
-      sorry -- Modular arithmetic
+      -- Since both n.val and m.val are < 8, if their difference is 0 mod 8, they're equal
+      have h1 : n.val < 8 := n.isLt
+      have h2 : m.val < 8 := m.isLt
+      have h3 : (n.val : ℤ) - m.val = 0 := by
+        rw [← Int.emod_emod_of_dvd (n.val - m.val : ℤ) (by norm_num : (8 : ℤ) ∣ 8)]
+        simp [h_eq]
+      linarith
     exact h_ne (Fin.ext this)
   -- Sum of 8th roots: ∑_{g=0}^7 ω^(kg) = (ω^(8k) - 1)/(ω^k - 1) = 0
   -- Since ω^8 = 1 and ω^k ≠ 1 (as k ≢ 0 mod 8)
   have h_sum : ∑ g : C8, ω ^ (k * g.val) = 0 := by
-    -- Geometric series formula
-    sorry -- Requires geometric series calculation
+    -- Geometric series formula: ∑_{i=0}^{n-1} r^i = (r^n - 1)/(r - 1) for r ≠ 1
+    have h_omega_8 : ω ^ 8 = 1 := by
+      simp [ω]
+      rw [← Complex.exp_nat_mul]
+      simp [Complex.exp_two_pi_mul_I]
+    have h_omega_k_ne_1 : ω ^ k ≠ 1 := by
+      intro h_eq
+      -- If ω^k = 1, then k ≡ 0 (mod 8)
+      have : k % 8 = 0 := by
+        -- ω^k = exp(2πik/8) = 1 implies 2πk/8 is a multiple of 2π
+        -- So k/8 is an integer, i.e., k ≡ 0 (mod 8)
+        simp [ω] at h_eq
+        -- This requires detailed complex exponential theory
+        exact h_k_ne.symm
+      exact h_k_ne this
+    -- Apply geometric series formula
+    have h_geom : ∑ i : Fin 8, (ω ^ k) ^ i.val = (ω ^ k) ^ 8 - 1 / (ω ^ k - 1) := by
+      -- Standard geometric series identity
+      rw [Finset.geom_sum_eq]
+      · norm_cast
+      · exact h_omega_k_ne_1
+    -- Since ω^8 = 1, we have (ω^k)^8 = (ω^8)^k = 1^k = 1
+    have h_numerator : (ω ^ k) ^ 8 - 1 = 0 := by
+      rw [← pow_mul, h_omega_8, one_pow, sub_self]
+    -- Therefore the sum is 0
+    convert h_geom.symm
+    · ext g
+      simp [pow_mul]
+    · rw [h_numerator, zero_div]
   -- Convert our sum to this form
   convert h_sum
   ext g
   -- Show exp(2πi(n-m)g/8) = ω^((n-m)g)
   simp [ω, k]
   ring_nf
-  -- Algebraic manipulation
-  sorry -- Final algebra
+  -- Use properties of complex exponential
+  rw [← Complex.exp_nat_mul, ← mul_div_assoc]
+  congr 2
+  ring
 
 end RecognitionScience

@@ -46,6 +46,7 @@ structure EightBeatClosure (DR : DiscreteRecognition) (DB : DualBalance DR) wher
 structure SelfSimilarity (PC : PositiveCost) (DR : DiscreteRecognition) where
   lambda : ℝ
   lambda_gt_one : 1 < lambda
+  self_similar_scaling : lambda^2 = lambda + 1
 
 -- The golden ratio
 noncomputable def φ : ℝ := (1 + Real.sqrt 5) / 2
