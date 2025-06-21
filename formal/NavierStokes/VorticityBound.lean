@@ -114,6 +114,14 @@ lemma de_giorgi_iteration (ν : ℝ) (hν : 0 < ν)
   -- This is the technical heart: iterate from L^{3/2} to L^∞
   -- Each iteration improves the integrability exponent by factor 3/2
   -- After finitely many steps, we reach L^∞ with the desired bound
+  --
+  -- The iteration works as follows:
+  -- 1. Start with energy bound: ‖ω‖_{L²(Q)} ≤ C/ν (from Navier-Stokes energy)
+  -- 2. Use Sobolev embedding: L² → L^{10/3} in 3+1 dimensions
+  -- 3. Apply energy estimate to get L^{10/3} → L^{5} bound
+  -- 4. Continue: L^{5} → L^{25/4} → ... → L^∞
+  -- 5. Each step uses parabolic regularity theory
+  -- 6. The constants accumulate to give C_star/√ν
   sorry
 
 -- Energy estimate for De Giorgi
@@ -125,6 +133,13 @@ lemma energy_estimate_de_giorgi (ν : ℝ) (sol : LerayHopfSolution ν)
       (C_H / (r²)) * (∫ p in Q, ω_k p ∂volume)² := by
   -- This uses the energy inequality for the Navier-Stokes equations
   -- Combined with the maximum principle for parabolic equations
+  --
+  -- Proof sketch:
+  -- 1. ω satisfies: ∂ω/∂t + u·∇ω = ν∆ω + ω·∇u (vorticity equation)
+  -- 2. For ω_k = max(|ω| - k, 0), we get a subsolution inequality
+  -- 3. Apply parabolic maximum principle in the form of energy estimates
+  -- 4. This gives the Caccioppoli-type inequality relating L² and L¹ norms
+  -- 5. The constant C_H comes from the parabolic Harnack theory
   sorry
 
 -- Sobolev embedding in parabolic setting
@@ -132,6 +147,16 @@ lemma parabolic_sobolev_embedding (f : ℝ³ × ℝ → ℝ) (Q : Set (ℝ³ × 
     (∫ p in Q, |f p|^(10/3) ∂volume)^(3/10) ≤
       C_H * (∫ p in Q, ‖∇f p‖² ∂volume)^(1/2) * (∫ p in Q, |f p|² ∂volume)^(1/2) := by
   -- Standard Sobolev embedding W^{1,2} ↪ L^{10/3} in 3+1 dimensions
+  --
+  -- This follows from:
+  -- 1. Hölder interpolation between W^{1,2} and L²
+  -- 2. Critical Sobolev exponent in 4D is 2* = 4
+  -- 3. Interpolation gives L^p for 2 ≤ p ≤ 4
+  -- 4. For p = 10/3, we get the stated embedding
+  -- 5. The constant C_H is universal (independent of the domain size)
+  --
+  -- In mathlib4, this would follow from Sobolev embedding theorems
+  -- in `Analysis.Calculus.MeanValue` and related modules
   sorry
 
 -- Iteration step
@@ -146,9 +171,21 @@ lemma iteration_step (ν : ℝ) (sol : LerayHopfSolution ν)
   | zero =>
     -- Base case: n = 0, p₀ = 2
     simp [pow_zero, pow_zero]
-    sorry
+    -- This reduces to showing the L² norm is preserved under restriction
+    -- ‖ω‖_{L²(Q₁)} ≤ ‖ω‖_{L²(Q₀)} which is trivial since Q₁ ⊆ Q₀
+    apply setIntegral_mono_on
+    · exact measurableSet_iUnion (fun _ => measurableSet_prod measurableSet_ball measurableSet_Ioc)
+    · intro p hp
+      rfl
+    · -- Integrability follows from energy bounds
+      sorry
   | succ n ih =>
     -- Inductive step: use Sobolev embedding and energy estimate
+    -- 1. Apply induction hypothesis to get L^{p_n} bound
+    -- 2. Use Sobolev embedding L^{p_n} → L^{p_{n+1}}
+    -- 3. Apply energy estimate to control the constants
+    -- 4. The factor (3/2) in the exponent comes from the Sobolev embedding
+    -- 5. The factor C_H comes from the energy estimate
     sorry
 
 -- Final L^∞ bound from iteration
@@ -161,6 +198,15 @@ lemma iteration_to_supremum (ν : ℝ) (sol : LerayHopfSolution ν)
   -- Take limit as n → ∞ in iteration_step
   -- The sequence of exponents p_n → ∞, giving L^∞ bound
   -- The constants C_H^n / ν^(n/2) are controlled by energy bounds
+  --
+  -- Key insight: As p_n → ∞, we have:
+  -- ‖f‖_{L^{p_n}} → ‖f‖_{L^∞}
+  --
+  -- The energy bound ensures:
+  -- ∫ |ω|² ≤ C/ν (from Navier-Stokes energy inequality)
+  --
+  -- Therefore: C_H^n / ν^(n/2) × (C/ν)^{1/2} ≤ C_star/√ν
+  -- provided C_H is chosen appropriately
   sorry
 
 -- Connection to Recognition Science scaling
@@ -175,6 +221,17 @@ lemma C_star_optimality :
     ‖vorticity (sol.u t) x‖ > (C_star - ε) / Real.sqrt ν := by
   -- This would require constructing explicit solutions that nearly achieve the bound
   -- Shows that C* cannot be improved
+  --
+  -- Construction idea:
+  -- 1. Take initial data with concentrated vorticity
+  -- 2. Choose ν small enough that geometric depletion barely applies
+  -- 3. The solution will nearly achieve the bound C*/√ν
+  -- 4. This shows the constant is sharp (cannot be improved)
+  --
+  -- Such constructions are typically done using:
+  -- - Self-similar solutions
+  -- - Concentrated vortex structures
+  -- - Careful analysis of the scaling limits
   sorry
 
 end NavierStokes
