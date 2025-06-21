@@ -64,8 +64,25 @@ lemma K_star_lt_C_star : K_star < C_star := by
 
 lemma drift_condition : β * C_star < 1/16 := by
   unfold β C_star C₀
+  -- β * C_star = (11/100) * (2 * (1/20) * √(4π))
+  -- = (11/100) * (1/10) * √(4π)
+  -- = (11/1000) * √(4π)
+  -- = 0.011 * √(4π)
+  -- ≈ 0.011 * 3.545 ≈ 0.039
+  -- Need to show 0.039 < 1/16 = 0.0625
   norm_num
-  -- This needs more careful numerical verification
-  sorry
+  -- The key inequality: 11 * √(4π) < 1000/16 = 62.5
+  -- Since √(4π) ≈ 3.545, we have 11 * 3.545 ≈ 39 < 62.5 ✓
+  have h1 : Real.sqrt (4 * Real.pi) < 4 := by
+    rw [Real.sqrt_lt_iff]
+    constructor
+    · norm_num
+    · norm_num [Real.pi_pos]
+  have h2 : 11 * Real.sqrt (4 * Real.pi) < 11 * 4 := by
+    exact mul_lt_mul_of_pos_left h1 (by norm_num)
+  have h3 : 11 * 4 = 44 := by norm_num
+  have h4 : (44 : ℝ) < 62.5 := by norm_num
+  rw [h3] at h2
+  linarith [h2, h4]
 
 end NavierStokes

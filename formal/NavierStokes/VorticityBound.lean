@@ -29,6 +29,12 @@ def ParabolicCylinder (center : ℝ³) (t₀ : ℝ) (r : ℝ) : Set (ℝ³ × �
 -- Shortened notation
 def Q_r (x : ℝ³) (t : ℝ) (r : ℝ) := ParabolicCylinder x t r
 
+-- Vorticity-velocity relationship
+lemma vorticity_gradient_bound (u : VelocityField) (x : ℝ³) :
+    ‖vorticity u x‖ ≤ 2 * ‖fderiv ℝ u x‖ := by
+  -- |curl u| ≤ 2|∇u| in 3D
+  sorry
+
 -- Universal vorticity bound theorem
 theorem universal_vorticity_bound (ν : ℝ) (hν : 0 < ν)
     (sol : LerayHopfSolution ν) (x₀ : ℝ³) (t₀ : ℝ) (ht₀ : 0 < t₀) :
@@ -42,12 +48,22 @@ theorem universal_vorticity_bound (ν : ℝ) (hν : 0 < ν)
   case pos =>
     -- Case 1: Apply geometric depletion
     have h_depl := geometric_depletion (sol.u t₀) (sol.div_free t₀) x₀ r hr h
-    -- Use |ω| ≤ 2|∇u|
-    sorry
+    have h_vort_grad := vorticity_gradient_bound (sol.u t₀) x₀
+    -- Combine: |ω| ≤ 2|∇u| ≤ 2C₀/r = 2C₀/√ν
+    calc ‖vorticity (sol.u t₀) x₀‖
+      ≤ 2 * ‖fderiv ℝ (sol.u t₀) x₀‖ := h_vort_grad
+      _ ≤ 2 * (C₀ / r) := by linarith [h_depl]
+      _ = 2 * C₀ / Real.sqrt ν := by simp [r]
+      _ ≤ C_star / Real.sqrt ν := by
+        unfold C_star
+        simp only [C₀]
+        -- Need to show 2 * (1/20) ≤ 2 * (1/20) * √(4π)
+        -- This is true since √(4π) ≥ 1
+        sorry
   case neg =>
     -- Case 2: De Giorgi iteration
     have h_iter := de_giorgi_iteration ν hν sol x₀ t₀ ht₀
-    sorry
+    exact h_iter
 
 -- De Giorgi iteration lemma
 lemma de_giorgi_iteration (ν : ℝ) (hν : 0 < ν)
@@ -56,6 +72,9 @@ lemma de_giorgi_iteration (ν : ℝ) (hν : 0 < ν)
     let Q := Q_r x₀ t₀ r
     let Q' := Q_r x₀ t₀ (r/2)
     ⨆ (p : ℝ³ × ℝ) (hp : p ∈ Q'), ‖vorticity (sol.u p.2) p.1‖ ≤ C_star / Real.sqrt ν := by
+  -- This is the technical heart: iterate from L^{3/2} to L^∞
+  -- Each iteration improves the integrability exponent by factor 3/2
+  -- After finitely many steps, we reach L^∞ with the desired bound
   sorry
 
 -- Energy estimate for De Giorgi
@@ -64,13 +83,16 @@ lemma energy_estimate_de_giorgi (ν : ℝ) (sol : LerayHopfSolution ν)
     let Q := Q_r x₀ t₀ r
     let ω_k := fun p => max (‖vorticity (sol.u p.2) p.1‖ - k) 0
     ∫ p in Q, (ω_k p)² ∂volume ≤
-      (C / (r²)) * (∫ p in Q, ω_k p ∂volume)² := by
+      (C_H / (r²)) * (∫ p in Q, ω_k p ∂volume)² := by
+  -- This uses the energy inequality for the Navier-Stokes equations
+  -- Combined with the maximum principle for parabolic equations
   sorry
 
 -- Sobolev embedding in parabolic setting
 lemma parabolic_sobolev_embedding (f : ℝ³ × ℝ → ℝ) (Q : Set (ℝ³ × ℝ)) :
     (∫ p in Q, |f p|^(10/3) ∂volume)^(3/10) ≤
-      C * (∫ p in Q, ‖∇f p‖² ∂volume)^(1/2) * (∫ p in Q, |f p|² ∂volume)^(1/2) := by
+      C_H * (∫ p in Q, ‖∇f p‖² ∂volume)^(1/2) * (∫ p in Q, |f p|² ∂volume)^(1/2) := by
+  -- Standard Sobolev embedding W^{1,2} ↪ L^{10/3} in 3+1 dimensions
   sorry
 
 -- Iteration step
@@ -80,8 +102,15 @@ lemma iteration_step (ν : ℝ) (sol : LerayHopfSolution ν)
     let Q_n := Q_r x₀ t₀ r_n
     let p_n := 2 * (3/2)^n
     (∫ p in Q_n, ‖vorticity (sol.u p.2) p.1‖^p_n ∂volume)^(1/p_n) ≤
-      (C^n / ν^(n/2)) * (∫ p in Q_r x₀ t₀ r, ‖vorticity (sol.u p.2) p.1‖^2 ∂volume)^(1/2) := by
-  sorry
+      (C_H^n / ν^(n/2)) * (∫ p in Q_r x₀ t₀ r, ‖vorticity (sol.u p.2) p.1‖^2 ∂volume)^(1/2) := by
+  induction n with
+  | zero =>
+    -- Base case: n = 0, p₀ = 2
+    simp [pow_zero, pow_zero]
+    sorry
+  | succ n ih =>
+    -- Inductive step: use Sobolev embedding and energy estimate
+    sorry
 
 -- Final L^∞ bound from iteration
 lemma iteration_to_supremum (ν : ℝ) (sol : LerayHopfSolution ν)
@@ -90,6 +119,9 @@ lemma iteration_to_supremum (ν : ℝ) (sol : LerayHopfSolution ν)
     let Q' := Q_r x₀ t₀ (r/2)
     ⨆ (p : ℝ³ × ℝ) (hp : p ∈ Q'), ‖vorticity (sol.u p.2) p.1‖ ≤
       C_star * (∫ p in Q_r x₀ t₀ r, ‖vorticity (sol.u p.2) p.1‖² ∂volume)^(1/2) / ν := by
+  -- Take limit as n → ∞ in iteration_step
+  -- The sequence of exponents p_n → ∞, giving L^∞ bound
+  -- The constants C_H^n / ν^(n/2) are controlled by energy bounds
   sorry
 
 -- Connection to Recognition Science scaling
@@ -97,5 +129,13 @@ lemma RS_scaling_consistency :
     C_star = 2 * C₀ * Real.sqrt (4 * Real.pi) := by
   unfold C_star C₀
   norm_num
+
+-- Key insight: why C* is the right constant
+lemma C_star_optimality :
+    ∀ ε > 0, ∃ ν u₀, ∃ sol : LerayHopfSolution ν, ∃ x t,
+    ‖vorticity (sol.u t) x‖ > (C_star - ε) / Real.sqrt ν := by
+  -- This would require constructing explicit solutions that nearly achieve the bound
+  -- Shows that C* cannot be improved
+  sorry
 
 end NavierStokes

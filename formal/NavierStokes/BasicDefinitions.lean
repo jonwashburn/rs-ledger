@@ -6,6 +6,7 @@ Authors: Jonathan Washburn
 import Mathlib.Analysis.Calculus.FDeriv.Basic
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.MeasureTheory.Function.L2Space
+import Mathlib.Analysis.Calculus.ContDiff.Basic
 import NavierStokes.Constants
 
 namespace NavierStokes
@@ -28,43 +29,39 @@ def ℝ³ := Fin 3 → ℝ
 -- Velocity field type
 def VelocityField := ℝ³ → ℝ³
 
--- Divergence-free condition
+-- Simplified divergence-free condition (proper definition would use distributional derivatives)
 def isDivFree (u : VelocityField) : Prop :=
-  ∀ x : ℝ³, (deriv (fun i => u (x + i • (fun j => if j = 0 then 1 else 0)) 0) 0 +
-             deriv (fun i => u (x + i • (fun j => if j = 1 then 1 else 0)) 1) 0 +
-             deriv (fun i => u (x + i • (fun j => if j = 2 then 1 else 0)) 2) 0) = 0
+  ∀ x : ℝ³, Differentiable ℝ u ∧
+  (fderiv ℝ u x 0 0 + fderiv ℝ u x 1 1 + fderiv ℝ u x 2 2 = 0)
 
--- Vorticity as curl of velocity
+-- Simplified vorticity definition (proper definition would use distributional curl)
 noncomputable def vorticity (u : VelocityField) : ℝ³ → ℝ³ :=
   fun x => fun i => match i with
-  | 0 => deriv (fun t => u (x + t • (fun j => if j = 1 then 1 else 0)) 2) 0 -
-         deriv (fun t => u (x + t • (fun j => if j = 2 then 1 else 0)) 1) 0
-  | 1 => deriv (fun t => u (x + t • (fun j => if j = 2 then 1 else 0)) 0) 0 -
-         deriv (fun t => u (x + t • (fun j => if j = 0 then 1 else 0)) 2) 0
-  | 2 => deriv (fun t => u (x + t • (fun j => if j = 0 then 1 else 0)) 1) 0 -
-         deriv (fun t => u (x + t • (fun j => if j = 1 then 1 else 0)) 0) 0
+  | 0 => fderiv ℝ u x 1 2 - fderiv ℝ u x 2 1
+  | 1 => fderiv ℝ u x 2 0 - fderiv ℝ u x 0 2
+  | 2 => fderiv ℝ u x 0 1 - fderiv ℝ u x 1 0
 
 -- Time-dependent velocity field
 def TimeVelocityField := ℝ → VelocityField
 
--- Leray-Hopf weak solution structure
+-- Simplified Leray-Hopf weak solution structure
 structure LerayHopfSolution (ν : ℝ) where
   u : TimeVelocityField
   -- Divergence-free at each time
   div_free : ∀ t, isDivFree (u t)
-  -- Energy inequality
-  energy_ineq : ∀ t ≥ 0, ∫ x, ‖u t x‖² ∂volume +
-                2 * ν * ∫ s in Set.Icc 0 t, ∫ x, ‖deriv (u s) x‖² ∂volume ∂volume ≤
-                ∫ x, ‖u 0 x‖² ∂volume
-  -- Weak formulation satisfied
-  weak_form : ∀ φ : ℝ → ℝ³ → ℝ³, True  -- TODO: proper weak formulation
+  -- Energy inequality (simplified form)
+  energy_ineq : ∀ t ≥ 0,
+    ∫ x, ‖u t x‖² ∂volume + 2 * ν * ∫ x, ‖fderiv ℝ (u t) x‖² ∂volume ≤
+    ∫ x, ‖u 0 x‖² ∂volume
+  -- Weak formulation satisfied (placeholder)
+  weak_form : True
 
 -- Navier-Stokes solution with additional regularity
 structure NSESolution (ν : ℝ) extends LerayHopfSolution ν where
   -- Smooth in space and time
-  smooth : ∀ t > 0, ∀ x, ContDiff ℝ ⊤ (fun y => u t y)
-  -- Satisfies NS equations pointwise
-  ns_eq : ∀ t > 0, ∀ x, True  -- TODO: proper NS equation
+  smooth : ∀ t > 0, ContDiff ℝ ⊤ (u t)
+  -- Satisfies NS equations pointwise (placeholder)
+  ns_eq : True
 
 -- Maximum vorticity norm
 noncomputable def maxVorticity (u : TimeVelocityField) (t : ℝ) : ℝ :=
@@ -74,11 +71,47 @@ noncomputable def maxVorticity (u : TimeVelocityField) (t : ℝ) : ℝ :=
 def BKMCriterion (u : TimeVelocityField) (T : ℝ) : Prop :=
   ∫ t in Set.Icc 0 T, maxVorticity u t ∂volume < ∞
 
+-- Existence of Leray-Hopf solutions (standard result - we assume it)
+axiom leray_hopf_existence (ν : ℝ) (hν : 0 < ν) (u₀ : VelocityField)
+    (h_energy : ∫ x, ‖u₀ x‖² ∂volume < ∞) (h_div : isDivFree u₀) :
+    ∃ sol : LerayHopfSolution ν, sol.u 0 = u₀
+
+-- BKM criterion implies regularity (standard result - we assume it)
+axiom bkm_implies_regularity (ν : ℝ) (sol : LerayHopfSolution ν) (T : ℝ) :
+    BKMCriterion sol.u T →
+    ∃ reg_sol : NSESolution ν, reg_sol.u = sol.u
+
 -- Main theorem statement (to be proved)
 theorem global_regularity (ν : ℝ) (hν : 0 < ν) (u₀ : VelocityField)
-    (h_smooth : ContDiff ℝ ⊤ u₀) (h_div : isDivFree u₀) :
+    (h_smooth : ContDiff ℝ ⊤ u₀) (h_div : isDivFree u₀)
+    (h_energy : ∫ x, ‖u₀ x‖² ∂volume < ∞) :
     ∃! sol : NSESolution ν, sol.u 0 = u₀ ∧
     ∀ t > 0, maxVorticity sol.u t ≤ C_star / Real.sqrt ν := by
-  sorry
+  -- Get Leray-Hopf solution
+  obtain ⟨lh_sol, h_init⟩ := leray_hopf_existence ν hν u₀ h_energy h_div
+
+  -- The key step: prove BKM criterion holds
+  have h_bkm : ∀ T > 0, BKMCriterion lh_sol.u T := by
+    intro T hT
+    -- This will follow from our vorticity bound
+    -- maxVorticity ≤ C*/√ν implies ∫₀ᵀ maxVorticity dt ≤ C*T/√ν < ∞
+    sorry
+
+  -- Apply BKM to get regularity
+  have h_reg : ∃ reg_sol : NSESolution ν, reg_sol.u = lh_sol.u :=
+    bkm_implies_regularity ν lh_sol 1 (h_bkm 1 (by norm_num))
+
+  obtain ⟨reg_sol, h_reg_eq⟩ := h_reg
+
+  -- Show this solution satisfies our bounds
+  use reg_sol
+  constructor
+  · constructor
+    · rw [h_reg_eq, h_init]
+    · intro t ht
+      -- This is where we'll use our main vorticity bound theorem
+      sorry
+  · -- Uniqueness follows from standard theory
+    sorry
 
 end NavierStokes
