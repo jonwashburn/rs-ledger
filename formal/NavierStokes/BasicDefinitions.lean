@@ -95,7 +95,29 @@ theorem global_regularity (ν : ℝ) (hν : 0 < ν) (u₀ : VelocityField)
     intro T hT
     -- This will follow from our vorticity bound
     -- maxVorticity ≤ C*/√ν implies ∫₀ᵀ maxVorticity dt ≤ C*T/√ν < ∞
-    sorry
+    unfold BKMCriterion maxVorticity
+    have h_bound_all : ∀ t > 0, ⨆ x : ℝ³, ‖vorticity (lh_sol.u t) x‖ ≤ C_star / Real.sqrt ν := by
+      intro t ht
+      apply ciSup_le
+      intro x
+      -- This requires connecting to our universal vorticity bound
+      -- For now, we assume this follows from the main vorticity theorem
+      sorry
+
+    calc ∫ t in Set.Icc 0 T, (⨆ x : ℝ³, ‖vorticity (lh_sol.u t) x‖) ∂volume
+      ≤ ∫ t in Set.Icc 0 T, C_star / Real.sqrt ν ∂volume := by
+        apply setIntegral_mono_on
+        · exact measurableSet_Icc
+        · intro t ht
+          by_cases h_pos : 0 < t
+          · exact h_bound_all t h_pos
+          · -- At t = 0, use initial data bound
+            sorry
+        · sorry -- integrability
+      _ = (C_star / Real.sqrt ν) * T := by
+        rw [setIntegral_const]
+        simp [measureReal_Icc_of_le (le_of_lt hT)]
+      _ < ∞ := by simp [C_star_pos, Real.sqrt_pos.mpr hν, hT]
 
   -- Apply BKM to get regularity
   have h_reg : ∃ reg_sol : NSESolution ν, reg_sol.u = lh_sol.u :=

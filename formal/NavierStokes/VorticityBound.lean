@@ -32,8 +32,37 @@ def Q_r (x : ℝ³) (t : ℝ) (r : ℝ) := ParabolicCylinder x t r
 -- Vorticity-velocity relationship
 lemma vorticity_gradient_bound (u : VelocityField) (x : ℝ³) :
     ‖vorticity u x‖ ≤ 2 * ‖fderiv ℝ u x‖ := by
-  -- |curl u| ≤ 2|∇u| in 3D
-  sorry
+  -- |curl u| ≤ 2|∇u| in 3D follows from the definition of curl
+  -- curl u = (∂u₃/∂x₂ - ∂u₂/∂x₃, ∂u₁/∂x₃ - ∂u₃/∂x₁, ∂u₂/∂x₁ - ∂u₁/∂x₂)
+  -- Each component is bounded by 2 times the operator norm of ∇u
+  unfold vorticity
+  simp only [norm_fin_sum_le_iff]
+  constructor
+  · -- Component 0: |∂u₃/∂x₂ - ∂u₂/∂x₃| ≤ 2‖∇u‖
+    calc |fderiv ℝ u x 1 2 - fderiv ℝ u x 2 1|
+      ≤ |fderiv ℝ u x 1 2| + |fderiv ℝ u x 2 1| := abs_sub _ _
+      _ ≤ ‖fderiv ℝ u x‖ + ‖fderiv ℝ u x‖ := by
+        constructor
+        · exact le_op_norm (fderiv ℝ u x) _ (by simp)
+        · exact le_op_norm (fderiv ℝ u x) _ (by simp)
+      _ = 2 * ‖fderiv ℝ u x‖ := by ring
+  constructor
+  · -- Component 1: similar
+    calc |fderiv ℝ u x 2 0 - fderiv ℝ u x 0 2|
+      ≤ |fderiv ℝ u x 2 0| + |fderiv ℝ u x 0 2| := abs_sub _ _
+      _ ≤ ‖fderiv ℝ u x‖ + ‖fderiv ℝ u x‖ := by
+        constructor
+        · exact le_op_norm (fderiv ℝ u x) _ (by simp)
+        · exact le_op_norm (fderiv ℝ u x) _ (by simp)
+      _ = 2 * ‖fderiv ℝ u x‖ := by ring
+  · -- Component 2: similar
+    calc |fderiv ℝ u x 0 1 - fderiv ℝ u x 1 0|
+      ≤ |fderiv ℝ u x 0 1| + |fderiv ℝ u x 1 0| := abs_sub _ _
+      _ ≤ ‖fderiv ℝ u x‖ + ‖fderiv ℝ u x‖ := by
+        constructor
+        · exact le_op_norm (fderiv ℝ u x) _ (by simp)
+        · exact le_op_norm (fderiv ℝ u x) _ (by simp)
+      _ = 2 * ‖fderiv ℝ u x‖ := by ring
 
 -- Universal vorticity bound theorem
 theorem universal_vorticity_bound (ν : ℝ) (hν : 0 < ν)
@@ -59,7 +88,17 @@ theorem universal_vorticity_bound (ν : ℝ) (hν : 0 < ν)
         simp only [C₀]
         -- Need to show 2 * (1/20) ≤ 2 * (1/20) * √(4π)
         -- This is true since √(4π) ≥ 1
-        sorry
+        have h_sqrt_ge_one : Real.sqrt (4 * Real.pi) ≥ 1 := by
+          rw [Real.sqrt_le_iff]
+          constructor
+          · norm_num
+          · norm_num [Real.pi_pos]
+        have h_eq : 2 * (1/20) = (1/10) := by norm_num
+        rw [h_eq]
+        have h_target : (1/10) ≤ (1/10) * Real.sqrt (4 * Real.pi) := by
+          rw [← mul_one (1/10 : ℝ)]
+          exact mul_le_mul_of_nonneg_left h_sqrt_ge_one (by norm_num)
+        exact h_target
   case neg =>
     -- Case 2: De Giorgi iteration
     have h_iter := de_giorgi_iteration ν hν sol x₀ t₀ ht₀

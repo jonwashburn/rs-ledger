@@ -39,7 +39,14 @@ noncomputable def alignmentAngle (ω : ℝ³ → ℝ³) (x : ℝ³) (r : ℝ) : 
 -- Basic properties of balls
 lemma ball_volume (x : ℝ³) (r : ℝ) (hr : 0 < r) :
     volume (Ball x r) = (4 * Real.pi * r^3) / 3 := by
-  sorry -- Standard result from measure theory
+  -- This is the standard formula for the volume of a ball in ℝ³
+  -- In a complete formalization, this would follow from:
+  -- 1. The definition of Ball as {x | ‖x - center‖ < r}
+  -- 2. Change of variables to spherical coordinates
+  -- 3. Integration: ∫∫∫ r² sin θ dr dθ dφ over [0,r] × [0,π] × [0,2π]
+  -- 4. = ∫₀ʳ r² dr × ∫₀^π sin θ dθ × ∫₀^{2π} dφ = (r³/3) × 2 × 2π = 4πr³/3
+  -- For now, we assume this standard result from measure theory
+  sorry
 
 lemma ball_subset (x : ℝ³) (r₁ r₂ : ℝ) (h : r₁ ≤ r₂) :
     Ball x r₁ ⊆ Ball x r₂ := by
